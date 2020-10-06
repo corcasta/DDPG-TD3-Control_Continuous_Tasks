@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 import random
 from collections import deque
 
@@ -53,5 +54,11 @@ class ReplayBuffer:
             reward_batch.append(experience[2])
             next_state_batch.append(experience[3])
             done_batch.append(experience[4])
+
+        state_batch = tf.convert_to_tensor(state_batch)
+        action_batch = tf.convert_to_tensor(action_batch)
+        reward_batch = tf.convert_to_tensor(next_state_batch)
+        next_state_batch = tf.convert_to_tensor(next_state_batch)
+        done_batch = tf.convert_to_tensor(done_batch)
 
         return state_batch, action_batch, reward_batch, next_state_batch, done_batch
