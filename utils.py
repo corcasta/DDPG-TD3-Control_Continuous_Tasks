@@ -36,26 +36,46 @@ class ReplayBuffer:
     def __init__(self, size):
         self.buffer = deque(maxlen=size)
 
-    def push(self, state, action, reward, next_state, done):
-        self.buffer.append((state, action, np.array([reward]), next_state, done))
+    def get_buffer(self):
+        return self.buffer
 
-    def sample(self, batch_size):
+    def push(self, state, action, reward, next_state, done, info, achieved_goal=None):
+        if achieved_goal is None:
+            self.buffer.append((state, action, np.array([reward]), next_state, done, info))
+        else:
+            self.buffer.append((state, action, np.array([reward]), next_state, done, info, achieved_goal))
+
+    def clear(self):
+        return self.buffer.clear()
+
+    def sample(self, batch_size, random_=True):
         state_batch = []
         action_batch = []
         reward_batch = []
         next_state_batch = []
         done_batch = []
+        info_batch = []
+        achieved_goal_batch = []
 
-        batch = random.sample(self.buffer, batch_size)
+        if random_ is True:
+            batch = random.sample(self.buffer, batch_size)
+        else:
+            batch = self.buffer
 
+        counter = 1  # This counter is just necessary when sampling in order,
         for experience in batch:
             state_batch.append(experience[0])
             action_batch.append(experience[1])
             reward_batch.append(experience[2])
             next_state_batch.append(experience[3])
             done_batch.append(experience[4])
+            info_batch.append(experience[5])
+            achieved_goal_batch.append(experience[6])
+            if random_ is False and counter == batch_size:
+                break
+            counter += 1
 
-        return state_batch, action_batch, reward_batch, next_state_batch, done_batch
+        return state_batch, action_batch, reward_batch, next_state_batch, done_batch, info_batch, achieved_goal_batch
 
     def __len__(self):
         return len(self.buffer)

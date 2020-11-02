@@ -10,6 +10,7 @@ class Actor(tf.keras.Model):
         self.hidden_l2 = tf.keras.layers.Dense(hidden_size_l2, activation=tf.nn.relu)
         self.output_l = tf.keras.layers.Dense(output_size, activation=tf.nn.tanh)
 
+    @tf.function
     def call(self, state_input, **kwargs):
         x = self.hidden_l1(state_input)
         x = self.hidden_l2(x)
@@ -33,6 +34,7 @@ class Critic(tf.keras.Model):
         self.hidden_l2 = tf.keras.layers.Dense(hidden_size_l2, activation=tf.nn.relu)
         self.output_l = tf.keras.layers.Dense(1, activation=None)
 
+    @tf.function
     def call(self, state_action_input, **kwargs):
         x = tf.concat(state_action_input, 1)
         x = self.hidden_l1(x)
