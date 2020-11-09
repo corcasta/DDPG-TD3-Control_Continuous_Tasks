@@ -252,8 +252,10 @@ import sys
 import gym
 import matplotlib.pyplot as plt
 from ddpg import DDPGAgent
+from td3 import TD3Agent
 from utils import *
 from her import HER
+import csv
 # *****************************************************************************************
 import os
 from gym import utils
@@ -315,20 +317,20 @@ class FetchWrapper(gym.ObservationWrapper):
 # env = gym.make('FetchReach-v1')
 # env = FetchReachEnv()
 # env = gym.make('Pendulum-v0')
-#env = FetchWrapper(gym.make('FetchReach-v1'))
-env = FetchWrapper(gym.make('FetchPush-v1'))
+env = FetchWrapper(gym.make('FetchReach-v1'))
+# env = FetchWrapper(gym.make('FetchPush-v1'))
 
-#epochs = 200
-#cycles = 50
-episodes = 10000
+# epochs = 200
+# cycles = 50
+episodes = 8000
 steps = 50  # 1000
-optimization_steps = 40
+opt_steps = 100
 batch_size = 128  # 128  # 64
-ou_noise = OUActionNoise(mean=np.zeros(1), std_deviation=float(0.2) * np.ones(1))
-agent = DDPGAgent(env, long_memory_size=1000000, short_memory_size=1000)
+# ou_noise = OUActionNoise(mean=np.zeros(1), std_deviation=float(0.2) * np.ones(1))
+#agent = DDPGAgent(env, long_memory_size=1000000, short_memory_size=1000) # DDPG
+agent = TD3Agent(env, long_memory_size=1000000, short_memory_size=1000) # TD3
 rewards = []
 avg_rewards = []
-success_rate = [0]
 
 k = 4
 # episode_memory = ReplayBuffer(size=steps)
@@ -349,7 +351,6 @@ for episode in range(episodes):
     # For all environments outside robotics section OpenAI GYM
     # state = env.reset()
     # episode_memory = ReplayBuffer(size=steps)
-    trajectories_generator = HER(env, agent)
     episode_reward = 0
     ou_noise.reset()
     agent.short_memory.clear()
@@ -362,7 +363,9 @@ for episode in range(episodes):
         # env.render()
         """
 
-        action = agent.get_action(np.concatenate((state, desired_goal)), ou_noise)
+
+        #action = agent.get_action(np.concatenate((state, desired_goal)), ou_noise) # DDPG
+        action = agent.get_action(np.concatenate((state, desired_goal)))  # TD3
         action = np.squeeze(action)
         new_state, desired_goal, achieved_goal, reward, done, info = env.step(action)
         # env.render()
@@ -397,24 +400,38 @@ for episode in range(episodes):
                                                                              "nan"))
             else:
                 sys.stdout.write(
-                    "episode: {}, reward: {}, average _reward: {} \n".format(episode,
-                                                                             np.round(episode_reward,
-                                                                                      decimals=2),
-                                                                             np.mean(rewards[-10:])))
+                    "episode: {}, long_mem_len: {}, shor_mem_len: {}, reward: {}, average _reward: {} \n".format(
+                        episode,
+                        len(
+                            agent.long_memory),
+                        len(
+                            agent.short_memory),
+                        np.round(episode_reward,
+                                 decimals=2),
+                        np.mean(rewards[-10:])))
             break
 
     rewards.append(episode_reward)
     avg_rewards.append(np.mean(rewards[-10:]))
-    trajectories_generator.run_strategy(k=4, strategy='future')
-    print('Short Memory len: ', len(agent.short_memory))
-    for step in range(len(agent.short_memory)):
+    agent.generate_artificial_transitions(k=4, strategy='future')
+    #print('Short Memory len: ', len(agent.short_memory))
+    #print('Short Memory len: ', len(agent.long_memory))
+    for _ in range(opt_steps):
         if len(agent.long_memory) > batch_size:
             agent.train(batch_size)
-            #print('Epoch: {}, Cycle: {}, Episode: {}, Average Reward: {}, Success_rate: {}'.format(epoch, cycle, episode, avg_rewards[-1], success_rate[-1]))
-    #success_rate.append(success_counter/(cycles*episodes))
+            # print('Epoch: {}, Cycle: {}, Episode: {}, Average Reward: {}, Success_rate: {}'.format(epoch, cycle, episode, avg_rewards[-1], success_rate[-1]))
+    # success_rate.append(success_counter/(cycles*episodes))
 
-#plt.plot(rewards)
-plt.plot(success_rate)
+data = zip(rewards, avg_rewards)
+filepath = 'td3_her_rewards.csv'
+with open(filepath, "w") as f:
+    writer = csv.writer(f)
+    writer.writerow(('rewards', 'avg_rewards'))
+    for row in data:
+        writer.writerow(row)
+
+plt.plot(rewards)
+plt.plot(avg_rewards)
 plt.plot()
 plt.xlabel('Episode')
 plt.ylabel('Success Rate')
