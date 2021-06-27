@@ -317,18 +317,18 @@ class FetchWrapper(gym.ObservationWrapper):
 # env = gym.make('FetchReach-v1')
 # env = FetchReachEnv()
 # env = gym.make('Pendulum-v0')
-env = FetchWrapper(gym.make('FetchReach-v1'))
+env = FetchWrapper(gym.make('FetchPush-v1'))
 # env = FetchWrapper(gym.make('FetchPush-v1'))
 
 # epochs = 200
 # cycles = 50
-episodes = 8000
+episodes = 30000
 steps = 50  # 1000
-opt_steps = 100
+opt_steps = 50 #optimizer_step
 batch_size = 128  # 128  # 64
 # ou_noise = OUActionNoise(mean=np.zeros(1), std_deviation=float(0.2) * np.ones(1))
-#agent = DDPGAgent(env, long_memory_size=1000000, short_memory_size=1000) # DDPG
-agent = TD3Agent(env, long_memory_size=1000000, short_memory_size=1000) # TD3
+agent = DDPGAgent(env, long_memory_size=1000000, short_memory_size=1000) # DDPG
+#agent = TD3Agent(env, long_memory_size=1000000, short_memory_size=1000) # TD3
 rewards = []
 avg_rewards = []
 
@@ -341,18 +341,18 @@ for epoch in range(epochs):
 """
 for episode in range(episodes):
     state, desired_goal, achieved_goal = env.reset()
-    """
+    """ 
     print('Episode: ', episode)
     print('state: ', state)
     print('desired_goal: ', desired_goal)
     print('achieved_goal: ', achieved_goal)
-    episode_memory = ReplayBuffer(size=steps)
+    #episode_memory = ReplayBuffer(size=steps)
     """
     # For all environments outside robotics section OpenAI GYM
     # state = env.reset()
     # episode_memory = ReplayBuffer(size=steps)
     episode_reward = 0
-    ou_noise.reset()
+    #ou_noise.reset()
     agent.short_memory.clear()
 
     for step in range(steps):
@@ -368,8 +368,19 @@ for episode in range(episodes):
         action = agent.get_action(np.concatenate((state, desired_goal)))  # TD3
         action = np.squeeze(action)
         new_state, desired_goal, achieved_goal, reward, done, info = env.step(action)
-        # env.render()
-
+        """ 
+        print("Step: ", step)
+        print("Action: ", action)
+        print("New State: ", new_state)
+        print("Desired Goal: ", desired_goal)
+        print("Achieved Goal: ", achieved_goal)
+        print("Rewards: ", reward)
+        print("Done: ", done)
+        print("Info: ", info)
+        env.render()
+        """
+        env.render()
+        
         """ 
         # For all environments outside robotics section OpenAI GYM
         agent.memory.push(state, action,
@@ -410,6 +421,12 @@ for episode in range(episodes):
                                  decimals=2),
                         np.mean(rewards[-10:])))
             break
+    """
+    if episode % 10 == 0:
+       agent.actor.save_weights('/home/corcasta/Documents/DDPG-TD3-Control_Continuous_Tasks/Weights/Fetch_Push/DDPG/norm/Test_1/actor_weights')
+       agent.critic.save_weights('/home/corcasta/Documents/DDPG-TD3-Control_Continuous_Tasks/Weights/Fetch_Push/DDPG/norm/Test_1/critic_weights')
+       agent.target_actor.save_weights('/home/corcasta/Documents/DDPG-TD3-Control_Continuous_Tasks/Weights/Fetch_Push/DDPG/norm/Test_1/target_actor_weights')
+       agent.target_critic.save_weights('/home/corcasta/Documents/DDPG-TD3-Control_Continuous_Tasks/Weights/Fetch_Push/DDPG/norm/Test_1/target_critic_weights')
 
     rewards.append(episode_reward)
     avg_rewards.append(np.mean(rewards[-10:]))
@@ -423,7 +440,7 @@ for episode in range(episodes):
     # success_rate.append(success_counter/(cycles*episodes))
 
 data = zip(rewards, avg_rewards)
-filepath = 'td3_her_rewards.csv'
+filepath = 'ddpg_her_rewards_FetchPush_BatchNorm_1.csv'
 with open(filepath, "w") as f:
     writer = csv.writer(f)
     writer.writerow(('rewards', 'avg_rewards'))
@@ -436,6 +453,17 @@ plt.plot()
 plt.xlabel('Episode')
 plt.ylabel('Success Rate')
 plt.show()
+"""
+
+
+
+
+
+
+
+
+
+
 
 """
     state, action, _, next_state, done, info, achieved_goal = episode_memory.sample(batch_size=steps, random_=False)

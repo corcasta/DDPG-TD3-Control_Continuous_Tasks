@@ -44,8 +44,11 @@ class TD3Agent:
                                   output_size=self.action_space)
         self.target_critic = Critic(hidden_size_l1=hidden_size_l1, hidden_size_l2=hidden_size_l2)
         self.target_critic_2 = Critic(hidden_size_l1=hidden_size_l1, hidden_size_l2=hidden_size_l2)
-        # self.actor.load_weights('/home/corcasta/Thesis/DDPG-TD3-Control_Continuous_Tasks/weights/actor_weights')
-        # self.critic.load_weights('/home/corcasta/Thesis/DDPG-TD3-Control_Continuous_Tasks/weights/critic_weights')
+
+        #self.actor.load_weights('/home/corcasta/Documents/DDPG-TD3-Control_Continuous_Tasks/Weights/Fetch_Reach/TD3/norm/Test_1/actor_weights')
+        #self.critic.load_weights('/home/corcasta/Documents/DDPG-TD3-Control_Continuous_Tasks/Weights/Fetch_Reach/TD3/norm/Test_1/critic_weights')
+        #self.critic_2.load_weights('/home/corcasta/Documents/DDPG-TD3-Control_Continuous_Tasks/Weights/Fetch_Reach/TD3/norm/Test_1/critic_weights')
+
         # Assigning target networks same weights as Actor & Critic networks
         self._update_target_networks(tau=1)
 
@@ -164,7 +167,18 @@ class TD3Agent:
                 recycle_achieved_goal = achieved_goal[step]
                 recycle_goal = achieved_goal[future]
                 new_reward = self.env.compute_reward(recycle_achieved_goal, recycle_goal, recycle_info)
-
+                """ 
+                print("********************************")
+                print("Recycle State: ", recycle_state)
+                print("Recycle Action: ", recycle_action)
+                print("Recycle Next State: ", recycle_next_state)
+                print("Recycle Done: ", recycle_done)
+                print("Recycle Info: ", recycle_info)
+                print("Recycle Achieved Goal: ", recycle_achieved_goal)
+                print("Recycle Goal: ", recycle_goal)
+                print("New Reward: ", new_reward)
+                print("")
+                """
                 self.long_memory.push(np.concatenate((recycle_state, recycle_goal)), recycle_action,
                                       new_reward,
                                       np.concatenate((recycle_next_state, recycle_goal)), recycle_done,
